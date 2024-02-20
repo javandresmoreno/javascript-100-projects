@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>100 JS Projects | Tinder Swipe</title>
+    <link rel="stylesheet" href="./assets/css/main.css">
+</head>
+<body>
+    <main>
+        <section>
+            <header>
+                <img src="./assets/img/tinder-logo.webp" alt="Tinder Logo">
+            </header>
+            <div class="cards">
+                <article>
+                    <img src="./assets/img/boy.webp" alt="Álex, brown-hair man, 25 years">
+                    <h2>Álex <span>25</span></h2>
+                    <div class="choice nope">NOPE</div>
+                    <div class="choice like">LIKE</div>
+                </article>
+                <article>
+                    <img src="./assets/img/girl.webp" alt="Leyla, reddish women, 22 years">
+                    <h2>Leyla <span>25</span></h2>
+                    <div class="choice nope">NOPE</div>
+                    <div class="choice like">LIKE</div>
+                </article>
+                <span>
+                    No hay más personas cerca de ti... <br>
+                    Vuelve a intentarlo más tarde
+                </span>
+            </div>
+            <footer>
+                <button class="is-refresh" aria-label="refresh"></button>
+                <button class="is-remove is-big" aria-label="remove"></button>
+                <button class="is-star" aria-label="star"></button>
+                <button class="is-fav is-big" aria-label="fav"></button>
+                <button class="is-zap" aria-label="zap"></button>
+            </footer>
+        </section>
+    </main>
+    <script>
+        const DECISION_THRESHOLD = 75 // the distance to make a decision
+
+        let isAnimating = false;
+
+        let pullDeltaX = 0 // distance from the starting point
+
+        function startDrag (event) {
+            if (isAnimating) return
+            
+            // get the first article element
+            const currentCard = event.target.closest('article')
+
+            // if the user is not dragging the card, return
+            if (!currentCard) return
+
+            //get initial position of the mouse or finger
+            const startX = event.pageX ?? event.touches[0].pageX
+
+            //listen the mouse and touch movements
+            document.addEventListener('mousemove', onMove)
+            document.addEventListener('mouseup', onEnd)
+
+            document.addEventListener('touchmove', onMove, { passive: true })
+            document.addEventListener('touchend', onEnd, { passive: true })
+
+            function onMove (event) {
+                // current position of mouse or finger
+                const currentX = event.pageX ?? event.touches[0].pageX
+    
+                // the distance between the initial and current position
+                pullDeltaX = currentX - startX
+
+                // there's no distance covered
+                if (pullDeltaX === 0) return
+
+                // the card is being animated
+                isAnimating = true
+
+                // calculate the rotation degree of the card using the distance
+                const rotateDeg = pullDeltaX / 14
+
+                // apply the styles to the card
+                currentCard.style.transform = `translateX(${pullDeltaX}px) rotate(${rotateDeg}deg)`
+                currentCard.style.cursor = 'grabbing'
+
+                //change opacity of the choice info 
+                const opacityChoice = Math.abs(pullDeltaX) / 100
+                const isRight = pullDeltaX > 0
+                const choiceElement = isRight ? currentCard.querySelector('.choice.like') : currentCard.querySelector('.choice.nope') 
+
+                choiceElement.style.opacity = opacityChoice
+            }
+    
+    
+            function onEnd (event) {
+                // remove the event listeners
+                document.removeEventListener('mousemove', onMove)
+                document.removeEventListener('mouseup', onEnd)
+                document.removeEventListener('touchmove', onMove)
+                document.removeEventListener('touchend', onEnd)
+
+                // Know if the user made a decision 
+                const decisionMade = Math.abs(pullDeltaX) >= DECISION_THRESHOLD
+
+                // if the user made a decision, remove the card
+                if (decisionMade) {
+                    const goingRight = pullDeltaX >= 0
+                    const goingLeft = !goingRight
+
+                    //add class acording to the decision
+                    currentCard.classList.add(goingRight ? 'go-right' : 'go-left')
+                    currentCard.addEventListener('transitionend', () => {
+                        currentCard.remove()
+                        isAnimating = false
+                    }, { once: true })
+                } else {
+                    currentCard.classList.add('reset')
+                    currentCard.classList.remove('go-right', 'go-left')
+                    currentCard.querySelectorAll('.choice').forEach(choice => choice.style.opacity = 0)
+                }
+
+                //reset the variables
+                currentCard.addEventListener('transitionend', () => {
+                    currentCard.removeAttribute('style') 
+                    currentCard.classList.remove('reset')
+                    currentCard.style.cursor = 'grab'
+
+                    isAnimating = false
+                    pullDeltaX = 0
+                })
+
+                // reset the choice info opacity
+                currentCard
+                    .querySelectorAll(".choice")
+                    .forEach((el) => (el.style.opacity = 0));
+
+            }
+        }
+
+
+        document.addEventListener('mousedown', startDrag)
+        document.addEventListener('touchstart', startDrag, { passive: true })
+    </script>
+</body>
+</html>
